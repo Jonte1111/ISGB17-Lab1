@@ -4,9 +4,13 @@ const express = require('express');
 const http = require('http');
 const fs = require('fs');
 const jsDOM = require('jsdom');
+const bodyParser = require('body-parser');
 const blogArray = require('./blogPosts');
 
 let app = express();
+app.use(express.urlencoded({ extended: true }));
+//app.use(bodyParser.urlencoded());
+//app.use(bodyParser.json());
 
 app.listen(3001, function() {
     console.log("Servern is running");
@@ -26,7 +30,7 @@ app.get('/', function(request, response) {
             //Där texten ska visas
             let pRefH1 = serverDOM.window.document.createElement('h1');
             let pRefH2 = serverDOM.window.document.createElement('h2');
-            let pRefH3 = serverDOM.window.document.createElement('h3');
+            let pRefH3 = serverDOM.window.document.createElement('p');
             let pRefP = serverDOM.window.document.createElement('p');
             let lineBreak = serverDOM.window.document.createElement('br');
             //texten
@@ -54,30 +58,7 @@ app.get('/', function(request, response) {
     });
 });
 
-/*app.post('/', function(request, response) {
-    console.log("Post /");
-    fs.readFile(__dirname + '/index.html', function(error, data) {
-        if(error) {
-            console.log("Shit happens");
-        }
-        else {
-            let htmlCode = data;
-            //Virtual DOM
-            let serverDOM = new jsDOM.JSDOM(htmlCode);
-            let section = serverDOM.window.document.querySelector('section');
-            //Där texten ska visas
-            let pRef = serverDOM.window.document.createElement('h1');
-            //texten
-            let pText = serverDOM.window.document.createTextNode("Din lilla hora");
-            pRef.appendChild(pText);
-            //Där texten ska hamna
-            section.appendChild(pRef);
-            
-            htmlCode = serverDOM.serialize();
-            response.send(htmlCode);
-        }
-    });
-});*/
+
 
 app.get('/skriv', function(request, response) {
     console.log("get skriv.html");
@@ -86,6 +67,28 @@ app.get('/skriv', function(request, response) {
 
 app.post('/skriv', function(request, response) {
     //Skickar tillbaks användaren till startsidan 
-    response.redirect('/');
+    console.log(request.body);
+    fs.readFile(__dirname + '/skriv.html', function(error, data) {
+        try {
+        if(request.body.subject.length < 3) throw new Error("Ämne för kort");
+        if(request.body.msgbody.length <10) throw new Error("Meddelande för kort");
+        if(request.body.nickname.length <3) throw new Error("Nickname för kort");
+        let currentDate = new Date();
+        
+        blogArray.blogPosts.unshift({
+            nickName: request.body.nickname,
+            msgSubject: request.body.subject,
+            timeStamp: currentDate.toISOString().split('T')[0],
+            msgBody: request.body.msgbody
+        });
+        response.redirect('/');
+        } catch(error) {
+            console.log(error);
+            response.redirect('/skriv');
+        }
+       
+    
+    });
 
+    
 });
